@@ -100,8 +100,8 @@
 
        77 Wrep PIC 9(1).
 
-       77 WnomE PIC A(15).
-       77 WprenomE PIC A(15).
+       77 Wnom PIC A(15).
+       77 Wprenom PIC A(15).
        77 WjourNE PIC X(2).
        77 WMoisNE PIC X(2).
        77 WanneNE PIC X(4).
@@ -115,6 +115,10 @@
        77 Wfin PIC 9(1).
        77 Wtrouve PIC 9(1).
        77 Wchoix PIC 9(1).
+
+       77 WidProf PIC 9(2).
+       77 Wtelephone PIC 9(10).
+       77 WmatiereProf PIC A(15).
 
        PROCEDURE DIVISION.
        OPEN EXTEND feleves
@@ -172,6 +176,48 @@
        END-PERFORM
        STOP RUN.
 
+       AJOUT_PROFESSEUR.
+       MOVE 0 TO Wrep
+       MOVE 0 TO Wfin
+       MOVE 0 TO Wtrouve
+       PERFORM WITH TEST AFTER UNTIL Wrep = 0
+        DISPLAY 'Entrer l identifiant du professeur : '
+        ACCEPT WidProf
+        OPEN INPUT fprof
+         MOVE WidProf TO fp_id
+          READ fprof
+          INVALID KEY
+           DISPLAY 'Professeur deja present'
+          NOT INVALID KEY
+           MOVE 1 TO Wtrouve
+          END-READ
+         CLOSE fprof
+         IF Wtrouve = 1
+           DISPLAY 'Nom : '
+           ACCEPT Wnom
+           DISPLAY 'Prenom : '
+           ACCEPT Wprenom
+           DISPLAY 'Telephone : '
+           ACCEPT Wtelephone
+           DISPLAY 'Matiere de l enseignant :'
+           ACCEPT WmatiereProf
+           OPEN I-O fprof
+               MOVE WidProf TO fp_id
+               MOVE Wnom TO fp_nom
+               MOVE Wprenom TO fp_prenom
+               MOVE Wtelephone TO fp_telephone
+               MOVE WmatiereProf TO fp_matiere
+               WRITE eleveTamp
+               END-WRITE
+           CLOSE fprof
+         END-IF
+
+        PERFORM WITH TEST AFTER UNTIL Wrep = 0 OR Wrep = 1
+          DISPLAY 'Souhaitez vous continuer ? 1 ou 0'
+          ACCEPT Wrep
+         END-PERFORM
+       END-PERFORM.
+
        AJOUT_ELEVES.
         PERFORM WITH TEST AFTER UNTIL Wrep = 0
         MOVE 0 TO Wrep
@@ -180,17 +226,16 @@
          DISPLAY 'INE'
          ACCEPT fe_ine
          DISPLAY 'Nom : '
-         ACCEPT WnomE
+         ACCEPT Wnom
          DISPLAY 'Prenom : '
-         ACCEPT WprenomE
+         ACCEPT Wprenom
          OPEN INPUT feleves
          PERFORM WITH TEST AFTER UNTIL  Wfin = 1
            READ feleves
            AT END
             MOVE 1 TO Wfin
            NOT AT END
-           DISPLAY fe_nom
-            IF WprenomE = fe_prenom AND WnomE = fe_nom
+            IF Wprenom = fe_prenom AND Wnom = fe_nom
                 DISPLAY 'eleves deja present'
                 MOVE 1 TO Wtrouve
             END-IF
@@ -208,10 +253,9 @@
            DISPLAY 'id classe :'
            ACCEPT WclasseE
            OPEN I-O feleves
-               MOVE WnomE TO fe_nom
-               MOVE WprenomE TO fe_prenom
+               MOVE Wnom TO fe_nom
+               MOVE Wprenom TO fe_prenom
                STRING WanneNE "/" WmoisNE "/" WjourNE INTO fe_dateNaiss
-               DISPLAY fe_dateNaiss
                MOVE WclasseE TO fe_classe
                WRITE eleveTamp
                END-WRITE
