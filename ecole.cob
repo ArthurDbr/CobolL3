@@ -19,9 +19,8 @@
        FILE STATUS IS fprof_stat.
 
        SELECT fmatiere ASSIGN TO "matiere.dat"
-       ORGANIZATION IS indexed
-       ACCESS IS dynamic
-       RECORD KEY fm_nom
+       ORGANIZATION IS sequential
+       ACCESS IS sequential
        FILE STATUS IS fmatiere_stat.
 
        SELECT fclasse ASSIGN TO "classe.dat"
@@ -34,7 +33,10 @@
        SELECT fnote ASSIGN TO "note.dat"
        ORGANIZATION IS indexed
        ACCESS IS dynamic
-       RECORD KEY fn_ine
+       RECORD KEY fn_cle
+       ALTERNATE RECORD KEY fn_idNote WITH DUPLICATES
+       ALTERNATE RECORD KEY fn_matiere WITH DUPLICATES
+       ALTERNATE RECORD KEY fn_ine WITH DUPLICATES
        ALTERNATE RECORD KEY fn_niveau WITH DUPLICATES
        FILE STATUS IS fnote_stat.
 
@@ -82,7 +84,7 @@
 
        FD fnote.
        01 noteTamp.
-        02 fn_cle
+        02 fn_cle.
           03 fn_idNote PIC 9(2).
           03 fn_ine PIC X(10).
           03 fn_matiere PIC A(15).
@@ -116,6 +118,7 @@
        77 WNomMatiere PIC A(15).
        77 Wnote PIC 9(2).
        77 Wcoef PIC 9(1).
+       77 WidNote PIC 9(2).
 
        77 Wfin PIC 9(1).
        77 Wtrouve PIC 9(1).
@@ -164,7 +167,8 @@
            DISPLAY ' 1 : AJOUT_ELEVES'
            DISPLAY ' 2 : AFFICHER_ELEVES'
            DISPLAY ' 3 : AJOUT_MATIERE'
-           DISPLAY ' 4 : AJOUT_NOTE'
+           DISPLAY ' 4 : AFFICHER_MATIERE'
+           DISPLAY ' 5 : AJOUT_NOTE'
            DISPLAY ' 0 : Sortir'
            ACCEPT Wchoix
            EVALUATE Wchoix
@@ -175,6 +179,8 @@
                WHEN 3
                    PERFORM AJOUT_MATIERE
                WHEN 4
+                   PERFORM AFFICHER_MATIERE
+               WHEN 5
                    PERFORM AJOUT_NOTE
                WHEN OTHER
                    MOVE 0 TO Wchoix
@@ -236,7 +242,7 @@
          ACCEPT Wprenom
          OPEN INPUT feleves
          PERFORM WITH TEST AFTER UNTIL  Wfin = 1
-           READ feleves
+           READ feleves NEXT
            AT END
             MOVE 1 TO Wfin
            NOT AT END
@@ -290,6 +296,20 @@
                 END-PERFORM
                 CLOSE feleves.
 
+        AFFICHER_MATIERE.
+        MOVE 0 TO Wfin
+        OPEN INPUT fmatiere
+           PERFORM WITH TEST AFTER UNTIL Wfin = 1
+               READ fmatiere
+               AT END
+                   MOVE 1 TO Wfin
+               NOT AT END
+                   DISPLAY 'Nom : '
+                   DISPLAY fm_nom
+               END-READ
+           END-PERFORM
+          CLOSE fmatiere.
+
        AJOUT_MATIERE.
        MOVE 0 TO Wfin
        MOVE 0 TO Wrep
@@ -302,7 +322,7 @@
            DISPLAY ' superieur a 9'
            ACCEPT Wcoef
          END-PERFORM
-         OPEN I-O fmatiere
+         OPEN EXTEND fmatiere
            MOVE WNomMatiere TO fm_nom
            MOVE Wcoef TO fm_coef
            WRITE matiereTamp
@@ -323,7 +343,7 @@
         OPEN INPUT feleves
         DISPLAY 'Veuillez rentrer le numero ine de l etudiant : '
         ACCEPT Wine
-        PERFORM WITH TEST AFTER UNTIL  Wfin = 1
+        PERFORM WITH TEST AFTER UNTIL Wfin = 1
            READ feleves NEXT
            AT END
             MOVE 1 TO Wfin
@@ -353,27 +373,45 @@
            END-PERFORM
            CLOSE fmatiere
            IF Wtrouve = 1
-             DISPLAY 'Quelle note a eu l etudiant ?'
-             ACCEPT Wnote
-             PERFORM WITH TEST AFTER UNTIL Wnote < 0 AND Wnote > 21
-               DISPLAY 'Note incorrect veuillez re entrer la note :'
-               ACCEPT Wnote
-             END-PERFORM
-             OPEN I-O fnote
-               MOVE Wine TO fn_ine
-               MOVE WNomMatiere TO fn_matiere
-               MOVE Wnote TO fn_note
-               WRITE noteTamp
-               END-WRITE
+             DISPLAY 'Quelle est le numero du devoir ?'
+             ACCEPT WidNote
+             OPEN INPUT fnote
+                PERFORM WITH TEST AFTER UNTIL Wfin = 1
+                READ fnote NEXT
+                AT END
+                  MOVE 1 TO Wfin
+                NOT AT END
+                  IF WNomMatiere = fn_matiere AND Wine = fn_ine
+                  AND fn_idNote = WidNote
+                    MOVE 0 TO Wtrouve
+                  END-IF
+                END-READ
+                END-PERFORM
              CLOSE fnote
-             DISPLAY 'Note ajoute !'
+             IF Wtrouve = 1
+              MOVE 50 TO Wnote
+               PERFORM WITH TEST AFTER UNTIL Wnote > 0 AND Wnote < 21
+                 DISPLAY 'Quelle note a eu l etudiant ? (< 0 et > 21)'
+                 ACCEPT Wnote
+               END-PERFORM
+               OPEN I-O fnote
+                 MOVE Wine TO fn_ine
+                 MOVE WNomMatiere TO fn_matiere
+                 MOVE WidNote TO fn_idNote
+                 MOVE Wnote TO fn_note
+                 WRITE noteTamp
+                 END-WRITE
+               CLOSE fnote
+               DISPLAY 'Note ajoute !'
+              ELSE
+               DISPLAY 'Numero deja ajoute !'
+              END-IF
+             ELSE
+               DISPLAY 'Matiere non reconnu !'
+             END-IF
            ELSE
-             DISPLAY 'Matiere non reconnu'
+             DISPLAY 'Numero ine non reconnu !'
            END-IF
-         ELSE
-           DISPLAY 'Numero ine non reconnu'
-         END-IF
-
          PERFORM WITH TEST AFTER UNTIL Wrep = 0 OR Wrep = 1
           DISPLAY 'Souhaitez vous continuer ? 1 ou 0'
           ACCEPT Wrep
