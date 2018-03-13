@@ -35,6 +35,7 @@
        ORGANIZATION IS indexed
        ACCESS IS dynamic
        RECORD KEY fn_ine
+       ALTERNATE RECORD KEY fn_niveau WITH DUPLICATES
        FILE STATUS IS fnote_stat.
 
        SELECT fcours ASSIGN TO "cours.dat"
@@ -81,14 +82,17 @@
 
        FD fnote.
        01 noteTamp.
+        02 fn_idNote PIC 9(2).
         02 fn_ine PIC X(10).
         02 fn_matiere PIC A(15).
         02 fn_note PIC 9(2).
+        02 fn_niveau PIC 9(1).
 
        FD fmatiere.
        01 matiereTamp.
         02 fm_nom PIC A(15).
         02 fm_coef PIC 9(1).
+        02 fm_niveau PIC 9(1).
 
        WORKING-STORAGE SECTION.
        77 fclasse_stat PIC 9(2).
