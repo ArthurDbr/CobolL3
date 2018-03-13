@@ -82,9 +82,10 @@
 
        FD fnote.
        01 noteTamp.
-        02 fn_idNote PIC 9(2).
-        02 fn_ine PIC X(10).
-        02 fn_matiere PIC A(15).
+        02 fn_cle
+          03 fn_idNote PIC 9(2).
+          03 fn_ine PIC X(10).
+          03 fn_matiere PIC A(15).
         02 fn_note PIC 9(2).
         02 fn_niveau PIC 9(1).
 
