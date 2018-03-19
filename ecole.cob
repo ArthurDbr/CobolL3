@@ -120,6 +120,12 @@
        77 Wcoef PIC 9(1).
        77 WidNote PIC 9(2).
 
+       77 WclasseId PIC 9(2).
+       77 WclasseIdProf PIC 9(2).
+       77 WclasseNiv PIC 9(1).
+       77 WclasseNnbElevesMax PIC 9(2).
+       77 WclasseNnbEleves PIC 9(2).
+
        77 Wfin PIC 9(1).
        77 Wtrouve PIC 9(1).
        77 Wchoix PIC 9(1).
@@ -169,6 +175,9 @@
            DISPLAY ' 3 : AJOUT_MATIERE'
            DISPLAY ' 4 : AFFICHER_MATIERE'
            DISPLAY ' 5 : AJOUT_NOTE'
+           DISPLAY ' 6 : AJOUT_CLASSE'
+           DISPLAY ' 8 : AJOUT_PROFESSEUR'
+           DISPLAY ' 9 : AFFICHER_PROFESSEUR'
            DISPLAY ' 0 : Sortir'
            ACCEPT Wchoix
            EVALUATE Wchoix
@@ -182,6 +191,12 @@
                    PERFORM AFFICHER_MATIERE
                WHEN 5
                    PERFORM AJOUT_NOTE
+               WHEN 6
+                   PERFORM AJOUT_CLASSE
+               WHEN 8
+                   PERFORM AJOUT_PROFESSEUR
+               WHEN 9
+                   PERFORM AFFICHER_PROFESSEUR
                WHEN OTHER
                    MOVE 0 TO Wchoix
        END-PERFORM
@@ -198,9 +213,9 @@
          MOVE WidProf TO fp_id
           READ fprof
           INVALID KEY
-           DISPLAY 'Professeur deja present'
-          NOT INVALID KEY
            MOVE 1 TO Wtrouve
+          NOT INVALID KEY
+           DISPLAY 'Professeur deja present'
           END-READ
          CLOSE fprof
          IF Wtrouve = 1
@@ -218,16 +233,33 @@
                MOVE Wprenom TO fp_prenom
                MOVE Wtelephone TO fp_telephone
                MOVE WmatiereProf TO fp_matiere
-               WRITE eleveTamp
+               WRITE profTamp
                END-WRITE
            CLOSE fprof
          END-IF
-
         PERFORM WITH TEST AFTER UNTIL Wrep = 0 OR Wrep = 1
           DISPLAY 'Souhaitez vous continuer ? 1 ou 0'
           ACCEPT Wrep
          END-PERFORM
        END-PERFORM.
+
+       AFFICHER_PROFESSEUR.
+       MOVE 0 TO Wfin
+       OPEN INPUT fprof
+                PERFORM WITH TEST AFTER UNTIL Wfin = 1
+                    READ fprof NEXT
+                    AT END
+                        MOVE 1 TO Wfin
+                    NOT AT END
+                        DISPLAY 'Nom : '
+                        DISPLAY fp_nom
+                        DISPLAY 'Prenom'
+                        DISPLAY fp_prenom
+                        DISPLAY 'ID '
+                        DISPLAY fp_id
+                    END-READ
+                END-PERFORM
+                CLOSE fprof.
 
        AJOUT_ELEVES.
         PERFORM WITH TEST AFTER UNTIL Wrep = 0
@@ -296,20 +328,6 @@
                 END-PERFORM
                 CLOSE feleves.
 
-        AFFICHER_MATIERE.
-        MOVE 0 TO Wfin
-        OPEN INPUT fmatiere
-           PERFORM WITH TEST AFTER UNTIL Wfin = 1
-               READ fmatiere
-               AT END
-                   MOVE 1 TO Wfin
-               NOT AT END
-                   DISPLAY 'Nom : '
-                   DISPLAY fm_nom
-               END-READ
-           END-PERFORM
-          CLOSE fmatiere.
-
        AJOUT_MATIERE.
        MOVE 0 TO Wfin
        MOVE 0 TO Wrep
@@ -334,6 +352,20 @@
           ACCEPT Wrep
          END-PERFORM
        END-PERFORM.
+
+       AFFICHER_MATIERE.
+        MOVE 0 TO Wfin
+        OPEN INPUT fmatiere
+           PERFORM WITH TEST AFTER UNTIL Wfin = 1
+               READ fmatiere
+               AT END
+                   MOVE 1 TO Wfin
+               NOT AT END
+                   DISPLAY 'Nom : '
+                   DISPLAY fm_nom
+               END-READ
+           END-PERFORM
+          CLOSE fmatiere.
 
        AJOUT_NOTE.
        MOVE 0 TO Wtrouve
@@ -412,6 +444,51 @@
            ELSE
              DISPLAY 'Numero ine non reconnu !'
            END-IF
+         PERFORM WITH TEST AFTER UNTIL Wrep = 0 OR Wrep = 1
+          DISPLAY 'Souhaitez vous continuer ? 1 ou 0'
+          ACCEPT Wrep
+         END-PERFORM
+       END-PERFORM.
+
+       AJOUT_CLASSE.
+        MOVE 1 TO Wtrouve
+        MOVE 0 TO Wfin
+        MOVE 0 TO Wrep
+        PERFORM WITH TEST AFTER UNTIL Wrep = 0
+        DISPLAY 'Quelle est l identifiant de la classe :'
+        ACCEPT WclasseId
+        OPEN INPUT fclasse
+         MOVE WclasseId TO fc_id
+          READ fclasse
+          INVALID KEY
+           MOVE 0 TO Wtrouve
+          NOT INVALID KEY
+           DISPLAY 'classe deja cree'
+          END-READ
+        CLOSE fclasse
+        DISPLAY Wtrouve
+         IF Wtrouve = 0
+           DISPLAY 'Quelle est l identifiant du professeur tuteur ?'
+           ACCEPT WclasseIdProf
+           OPEN INPUT fprof
+           MOVE WclasseIdProf TO fp_id
+            READ fprof
+            INVALID KEY
+             DISPLAY 'Professeur inexistant'
+            NOT INVALID KEY
+             MOVE 1 TO Wtrouve
+            END-READ
+           CLOSE fprof
+           IF Wtrouve = 1
+             PERFORM WITH TEST AFTER UNTIL WclasseNiv < 6 AND WclasseNiv > 3
+              DISPLAY 'Quelle est le niveau de la classe ?(6em, 5em...)'
+              ACCEPT WclasseNiv
+             END-PERFORM
+               MOVE 0 TO WclasseNiv
+               MOVE 0 TO WclasseNnbElevesMax
+               MOVE 0 TO WclasseNnbEleves
+           END-IF
+         END-IF
          PERFORM WITH TEST AFTER UNTIL Wrep = 0 OR Wrep = 1
           DISPLAY 'Souhaitez vous continuer ? 1 ou 0'
           ACCEPT Wrep
