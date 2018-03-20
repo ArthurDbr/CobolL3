@@ -43,8 +43,12 @@
        SELECT fcours ASSIGN TO "cours.dat"
        ORGANIZATION IS indexed
        ACCESS IS dynamic
-       RECORD KEY fco_numS
-       ALTERNATE RECORD KEY fco_classe WITH DUPLICATES
+       RECORD KEY fco_cle
+       ALTERNATE RECORD KEY fco_numS WITH DUPLICATES
+       ALTERNATE RECORD KEY fco_mois WITH DUPLICATES
+       ALTERNATE RECORD KEY fco_jour WITH DUPLICATES
+       ALTERNATE RECORD KEY fco_horaireD WITH DUPLICATES
+       ALTERNATE RECORD KEY fco_horaireF WITH DUPLICATES
        FILE STATUS IS fcours_stat.
 
        DATA DIVISION.
@@ -68,9 +72,12 @@
 
        FD fcours.
        01 coursTamp.
-        02 fco_numS PIC 9(2).
-        02 fco_horaireD PIC 9(2).
-        02 fco_horaireF PIC 9(2).
+        02 fco_cle.
+         03 fco_numS PIC 9(2).
+         03 fco_mois PIC 9(2).
+         03 fco_jour PIC 9(2).
+         03 fco_horaireD PIC 9(2).
+         03 fco_horaireF PIC 9(2).
         02 fco_classe PIC X(3).
         02 fco_profId PIC 9(2).
 
@@ -120,9 +127,23 @@
        77 Wcoef PIC 9(1).
        77 WidNote PIC 9(2).
 
+       77 WclasseId PIC 9(2).
+       77 WclasseIdProf PIC 9(2).
+       77 WclasseNiv PIC 9(1).
+       77 WclasseNnbElevesMax PIC 9(2).
+       77 WclasseNnbEleves PIC 9(2).
+
+       77 Wtemp PIC 9(2).
+
+       77 WnumS PIC 9(2).
+       77 WhoraireD PIC 9(2).
+       77 WhoraireF PIC 9(2).
+       77 Wmois PIC 9(2).
+       77 Wjour PIC 9(2).
+
        77 Wfin PIC 9(1).
        77 Wtrouve PIC 9(1).
-       77 Wchoix PIC 9(1).
+       77 Wchoix PIC 9(2).
 
        77 WidProf PIC 9(2).
        77 Wtelephone PIC 9(10).
@@ -164,11 +185,12 @@
        PERFORM WITH TEST AFTER UNTIL Wchoix = 0
            DISPLAY '----------------------------------'
            DISPLAY 'Quelle choix voulez vous faire :'
-           DISPLAY ' 1 : AJOUT_ELEVES'
-           DISPLAY ' 2 : AFFICHER_ELEVES'
-           DISPLAY ' 3 : AJOUT_MATIERE'
-           DISPLAY ' 4 : AFFICHER_MATIERE'
-           DISPLAY ' 5 : AJOUT_NOTE'
+           DISPLAY ' 01 : AJOUT_ELEVES        | 02 : AFFICHER_ELEVES'
+           DISPLAY ' 03 : AJOUT_MATIERE       | 04 : AFFICHER_MATIERE'
+           DISPLAY ' 05 : AJOUT_NOTE          | 06 : '
+           DISPLAY ' 07 : AJOUT_CLASSE        | 08 : AFFICHER_CLASSE'
+           DISPLAY ' 09 : AJOUT_PROFESSEUR    | 10 : AFFICHER_PROFESSEUR'
+           DISPLAY ' 11 : AJOUT_COURS         | 12 : AFFICHER_COURS'
            DISPLAY ' 0 : Sortir'
            ACCEPT Wchoix
            EVALUATE Wchoix
@@ -182,6 +204,18 @@
                    PERFORM AFFICHER_MATIERE
                WHEN 5
                    PERFORM AJOUT_NOTE
+               WHEN 7
+                   PERFORM AJOUT_CLASSE
+               WHEN 8
+                   PERFORM AFFICHER_CLASSE
+               WHEN 9
+                   PERFORM AJOUT_PROFESSEUR
+               WHEN 10
+                   PERFORM AFFICHER_PROFESSEUR
+               WHEN 11
+                   PERFORM AJOUT_COURS
+               WHEN 12
+                   PERFORM AFFICHER_COURS
                WHEN OTHER
                    MOVE 0 TO Wchoix
        END-PERFORM
@@ -198,16 +232,20 @@
          MOVE WidProf TO fp_id
           READ fprof
           INVALID KEY
-           DISPLAY 'Professeur deja present'
-          NOT INVALID KEY
            MOVE 1 TO Wtrouve
+          NOT INVALID KEY
+           DISPLAY 'Professeur deja present'
           END-READ
          CLOSE fprof
          IF Wtrouve = 1
-           DISPLAY 'Nom : '
-           ACCEPT Wnom
-           DISPLAY 'Prenom : '
-           ACCEPT Wprenom
+           PERFORM WITH TEST AFTER UNTIL Wnom ALPHABETIC
+            DISPLAY 'Nom : '
+            ACCEPT Wnom
+           END-PERFORM
+           PERFORM WITH TEST AFTER UNTIL Wnom ALPHABETIC
+            DISPLAY 'Prenom : '
+            ACCEPT Wprenom
+           END-PERFORM
            DISPLAY 'Telephone : '
            ACCEPT Wtelephone
            DISPLAY 'Matiere de l enseignant :'
@@ -218,16 +256,33 @@
                MOVE Wprenom TO fp_prenom
                MOVE Wtelephone TO fp_telephone
                MOVE WmatiereProf TO fp_matiere
-               WRITE eleveTamp
+               WRITE profTamp
                END-WRITE
            CLOSE fprof
          END-IF
-
         PERFORM WITH TEST AFTER UNTIL Wrep = 0 OR Wrep = 1
           DISPLAY 'Souhaitez vous continuer ? 1 ou 0'
           ACCEPT Wrep
          END-PERFORM
        END-PERFORM.
+
+       AFFICHER_PROFESSEUR.
+       MOVE 0 TO Wfin
+       OPEN INPUT fprof
+                PERFORM WITH TEST AFTER UNTIL Wfin = 1
+                    READ fprof NEXT
+                    AT END
+                        MOVE 1 TO Wfin
+                    NOT AT END
+                        DISPLAY 'Nom : '
+                        DISPLAY fp_nom
+                        DISPLAY 'Prenom'
+                        DISPLAY fp_prenom
+                        DISPLAY 'ID '
+                        DISPLAY fp_id
+                    END-READ
+                END-PERFORM
+                CLOSE fprof.
 
        AJOUT_ELEVES.
         PERFORM WITH TEST AFTER UNTIL Wrep = 0
@@ -296,20 +351,6 @@
                 END-PERFORM
                 CLOSE feleves.
 
-        AFFICHER_MATIERE.
-        MOVE 0 TO Wfin
-        OPEN INPUT fmatiere
-           PERFORM WITH TEST AFTER UNTIL Wfin = 1
-               READ fmatiere
-               AT END
-                   MOVE 1 TO Wfin
-               NOT AT END
-                   DISPLAY 'Nom : '
-                   DISPLAY fm_nom
-               END-READ
-           END-PERFORM
-          CLOSE fmatiere.
-
        AJOUT_MATIERE.
        MOVE 0 TO Wfin
        MOVE 0 TO Wrep
@@ -334,6 +375,20 @@
           ACCEPT Wrep
          END-PERFORM
        END-PERFORM.
+
+       AFFICHER_MATIERE.
+        MOVE 0 TO Wfin
+        OPEN INPUT fmatiere
+           PERFORM WITH TEST AFTER UNTIL Wfin = 1
+               READ fmatiere
+               AT END
+                   MOVE 1 TO Wfin
+               NOT AT END
+                   DISPLAY 'Nom : '
+                   DISPLAY fm_nom
+               END-READ
+           END-PERFORM
+          CLOSE fmatiere.
 
        AJOUT_NOTE.
        MOVE 0 TO Wtrouve
@@ -417,3 +472,216 @@
           ACCEPT Wrep
          END-PERFORM
        END-PERFORM.
+
+       AJOUT_CLASSE.
+        MOVE 1 TO Wtrouve
+        MOVE 0 TO Wfin
+        MOVE 0 TO Wrep
+        PERFORM WITH TEST AFTER UNTIL Wrep = 0
+        DISPLAY 'Quelle est l identifiant de la classe :'
+        ACCEPT WclasseId
+        OPEN INPUT fclasse
+         MOVE WclasseId TO fc_id
+          READ fclasse
+          INVALID KEY
+           MOVE 0 TO Wtrouve
+          NOT INVALID KEY
+           DISPLAY 'classe deja cree'
+          END-READ
+        CLOSE fclasse
+        DISPLAY Wtrouve
+         IF Wtrouve = 0
+           DISPLAY 'Quelle est l identifiant du professeur tuteur ?'
+           ACCEPT WclasseIdProf
+           OPEN INPUT fprof
+           MOVE WclasseIdProf TO fp_id
+            READ fprof
+            INVALID KEY
+             DISPLAY 'Professeur inexistant'
+            NOT INVALID KEY
+             MOVE 1 TO Wtrouve
+            END-READ
+           CLOSE fprof
+           IF Wtrouve = 1
+             PERFORM WITH TEST AFTER UNTIL WclasseNiv < 7 AND WclasseNiv > 2
+              DISPLAY 'Quelle est le niveau de la classe ?(6em, 5em...)'
+              ACCEPT WclasseNiv
+             END-PERFORM
+             PERFORM WITH TEST AFTER UNTIL WclasseNnbElevesMax < 41
+             AND WclasseNnbElevesMax > 19
+              DISPLAY 'Quelle est le nombre max d eleves de cette classe ?'
+              DISPLAY 'min : 20, max 40'
+              ACCEPT WclasseNnbElevesMax
+             END-PERFORM
+            OPEN I-O fclasse
+              MOVE WclasseId TO fc_id
+              MOVE WclasseIdProf TO fc_idProf
+              MOVE WclasseNiv TO fc_niveau
+              MOVE WclasseNnbElevesMax TO fc_nbElevesMax
+              MOVE 0 TO fn_note
+              WRITE classeTamp
+            END-WRITE
+            CLOSE fclasse
+            DISPLAY 'Classe ajoute !'
+           END-IF
+         END-IF
+         PERFORM WITH TEST AFTER UNTIL Wrep = 0 OR Wrep = 1
+          DISPLAY 'Souhaitez vous continuer ? 1 ou 0'
+          ACCEPT Wrep
+         END-PERFORM
+       END-PERFORM.
+
+       AFFICHER_CLASSE.
+        MOVE 0 TO Wfin
+        OPEN INPUT fclasse
+           PERFORM WITH TEST AFTER UNTIL Wfin = 1
+               READ fclasse NEXT
+               AT END
+                   MOVE 1 TO Wfin
+               NOT AT END
+                   DISPLAY 'id : '
+                   DISPLAY fc_id
+                   DISPLAY 'Prof tuteur id :'
+                   DISPLAY fc_idProf
+               END-READ
+           END-PERFORM
+          CLOSE fclasse.
+
+        AJOUT_COURS.
+         MOVE 1 TO Wtrouve
+         MOVE 0 TO Wfin
+         MOVE 0 TO Wrep
+         PERFORM WITH TEST AFTER UNTIL Wrep = 0
+          PERFORM WITH TEST AFTER UNTIL WnumS > 0 AND WnumS < 60
+           DISPLAY 'Dans quelle salle a lieu le cours ? (num) : '
+           ACCEPT WnumS
+
+           PERFORM WITH TEST AFTER UNTIL Wmois > 0 AND Wmois < 13
+            DISPLAY 'Pour quelle mois voulez vous reserver la salle ?'
+            ACCEPT Wmois
+           END-PERFORM
+           PERFORM WITH TEST AFTER UNTIL Wjour > 0 AND Wjour < 32
+            DISPLAY 'Pour quelle jour ? :'
+            ACCEPT Wjour
+          END-PERFORM
+
+           PERFORM WITH TEST AFTER UNTIL WhoraireF - WhoraireD > 0
+            PERFORM WITH TEST AFTER UNTIL WhoraireD > 7 AND WhoraireD < 18
+              DISPLAY 'Entrer l horaire de debut du cours'
+              ACCEPT WhoraireD
+            END-PERFORM
+            PERFORM WITH TEST AFTER UNTIL WhoraireF > 8 AND WhoraireF < 19
+              DISPLAY 'Entrer l horaire de fin du cours'
+              ACCEPT WhoraireF
+            END-PERFORM
+            IF WhoraireF - WhoraireD < 0
+              DISPLAY 'L horaire de debut doit etre inferieur a l horaire'
+              DISPLAY 'de fin'
+            END-IF
+           END-PERFORM
+
+           MOVE 0 TO Wtrouve
+           OPEN INPUT fcours
+           MOVE WnumS TO fco_numS
+           START fcours KEY IS = fco_numS
+           INVALID KEY
+             MOVE 1 TO Wtrouve
+           NOT INVALID KEY
+             PERFORM WITH TEST AFTER UNTIL Wfin = 1
+                 READ fcours NEXT
+                 AT END
+                   MOVE 1 TO Wfin
+                 NOT AT END
+                  IF Wmois = fco_mois
+                   IF Wjour = fco_jour
+                     MOVE 1 TO Wfin
+                     IF fco_horaireD = WhoraireD
+                      MOVE 0 TO Wtrouve
+                     END-IF
+                     IF fco_horaireF = WhoraireF
+                      MOVE 0 TO Wtrouve
+                     END-IF
+                     IF WhoraireD < fco_horaireF AND WhoraireD >= fco_horaireD
+                      MOVE 0 TO Wtrouve
+                     END-IF
+                     IF WhoraireF < fco_horaireF AND WhoraireF >= fco_horaireD
+                      MOVE 0 TO Wtrouve
+                     END-IF
+                   ELSE
+                    MOVE 1 TO Wfin
+                  ELSE
+                   MOVE 1 TO Wfin
+                  END-IF
+                 END-READ
+             END-PERFORM
+           END-START
+           CLOSE fcours
+
+           IF Wtrouve = 1
+            MOVE 0 TO Wtrouve
+            DISPLAY 'Quelle classe va assister à ce cours ?'
+            ACCEPT WclasseId
+            OPEN INPUT fclasse
+             MOVE WclasseId TO fc_id
+              READ fclasse
+              INVALID KEY
+               DISPLAY 'Classe inconnu'
+              NOT INVALID KEY
+               MOVE 1 TO Wtrouve
+              END-READ
+            CLOSE fclasse
+            IF Wtrouve = 1
+              MOVE 0 TO Wtrouve
+              DISPLAY 'Quelle professeur donnera le cours ? (id)'
+              ACCEPT WidProf
+              OPEN INPUT fprof
+               MOVE WclasseId TO fp_id
+                READ fprof
+                INVALID KEY
+                 DISPLAY 'Professeur inconnu'
+                NOT INVALID KEY
+                 MOVE 1 TO Wtrouve
+                END-READ
+              CLOSE fprof
+              IF Wtrouve = 1
+                OPEN I-O fcours
+                 MOVE WnumS TO fco_numS
+                 MOVE Wmois TO fco_mois
+                 MOVE Wjour TO fco_jour
+                 MOVE WhoraireD TO fco_horaireD
+                 MOVE WhoraireF TO fco_horaireF
+                 MOVE WclasseId TO fco_classe
+                 MOVE WidProf TO fco_profId
+                 WRITE coursTamp
+                END-WRITE
+                DISPLAY 'Cours ajoute !'
+              END-IF
+            END-IF
+           ELSE
+            DISPLAY 'Classe occupe pour ces horaires'
+           END-IF
+           CLOSE fcours
+          END-PERFORM
+           PERFORM WITH TEST AFTER UNTIL Wrep = 0 OR Wrep = 1
+            DISPLAY 'Souhaitez vous continuer ? 1 ou 0'
+            ACCEPT Wrep
+           END-PERFORM
+         END-PERFORM.
+
+         AFFICHER_COURS.
+          MOVE 0 TO Wfin
+          OPEN INPUT fcours
+             PERFORM WITH TEST AFTER UNTIL Wfin = 1
+                 READ fcours NEXT
+                 AT END
+                     MOVE 1 TO Wfin
+                 NOT AT END
+                     DISPLAY 'salle numero : '
+                     DISPLAY fco_numS
+                     DISPLAY "Le "fco_jour "/"fco_mois
+                     DISPLAY "debut : "fco_horaireD" heure "
+                     DISPLAY "fin   : "fco_horaireF" heure"
+                     DISPLAY 'Prof id : 'fco_profId
+                 END-READ
+             END-PERFORM
+            CLOSE fcours.
