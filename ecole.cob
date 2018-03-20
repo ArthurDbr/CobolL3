@@ -134,6 +134,7 @@
        77 WclasseNnbEleves PIC 9(2).
 
        77 Wtemp PIC 9(2).
+       77 Wniveau PIC 9(1).
 
        77 WnumS PIC 9(2).
        77 WhoraireD PIC 9(2).
@@ -148,6 +149,10 @@
        77 WidProf PIC 9(2).
        77 Wtelephone PIC 9(10).
        77 WmatiereProf PIC A(15).
+
+       77 WnoteMatiMoy PIC 9(4).
+       77 WnbEleves PIC 9(3).
+       77 Wresultat PIC 9(2).99.
 
        PROCEDURE DIVISION.
        OPEN EXTEND feleves
@@ -187,10 +192,11 @@
            DISPLAY 'Quelle choix voulez vous faire :'
            DISPLAY ' 01 : AJOUT_ELEVES        | 02 : AFFICHER_ELEVES'
            DISPLAY ' 03 : AJOUT_MATIERE       | 04 : AFFICHER_MATIERE'
-           DISPLAY ' 05 : AJOUT_NOTE          | 06 : '
+           DISPLAY ' 05 : AJOUT_NOTE          | 06 : AFFICHER_NOTE'
            DISPLAY ' 07 : AJOUT_CLASSE        | 08 : AFFICHER_CLASSE'
            DISPLAY ' 09 : AJOUT_PROFESSEUR    | 10 : AFFICHER_PROFESSEUR'
            DISPLAY ' 11 : AJOUT_COURS         | 12 : AFFICHER_COURS'
+           DISPLAY ' 13 : Moyenne_Matiere_Classe'
            DISPLAY ' 0 : Sortir'
            ACCEPT Wchoix
            EVALUATE Wchoix
@@ -204,6 +210,8 @@
                    PERFORM AFFICHER_MATIERE
                WHEN 5
                    PERFORM AJOUT_NOTE
+               WHEN 6
+                   PERFORM AFFICHER_NOTE
                WHEN 7
                    PERFORM AJOUT_CLASSE
                WHEN 8
@@ -216,6 +224,8 @@
                    PERFORM AJOUT_COURS
                WHEN 12
                    PERFORM AFFICHER_COURS
+               WHEN 13
+                   PERFORM Moyenne_Matiere_Classe
                WHEN OTHER
                    MOVE 0 TO Wchoix
        END-PERFORM
@@ -274,12 +284,10 @@
                     AT END
                         MOVE 1 TO Wfin
                     NOT AT END
-                        DISPLAY 'Nom : '
-                        DISPLAY fp_nom
-                        DISPLAY 'Prenom'
-                        DISPLAY fp_prenom
-                        DISPLAY 'ID '
-                        DISPLAY fp_id
+                        DISPLAY '-----------------------'
+                        DISPLAY 'Nom : 'fp_nom
+                        DISPLAY 'Prenom 'fp_prenom
+                        DISPLAY 'ID 'fp_id
                     END-READ
                 END-PERFORM
                 CLOSE fprof.
@@ -289,12 +297,18 @@
         MOVE 0 TO Wrep
         MOVE 0 TO Wtrouve
          DISPLAY 'Veuillez entrer les informations suivantes :'
-         DISPLAY 'INE'
-         ACCEPT fe_ine
-         DISPLAY 'Nom : '
-         ACCEPT Wnom
-         DISPLAY 'Prenom : '
-         ACCEPT Wprenom
+         PERFORM WITH TEST AFTER UNTIL Wnom ALPHABETIC
+          DISPLAY 'INE'
+          ACCEPT Wine
+         END-PERFORM
+         PERFORM WITH TEST AFTER UNTIL Wnom ALPHABETIC
+          DISPLAY 'Nom : '
+          ACCEPT Wnom
+         END-PERFORM
+         PERFORM WITH TEST AFTER UNTIL Wprenom ALPHABETIC
+          DISPLAY 'Prenom : '
+          ACCEPT Wprenom
+         END-PERFORM
          OPEN INPUT feleves
          PERFORM WITH TEST AFTER UNTIL  Wfin = 1
            READ feleves NEXT
@@ -319,6 +333,7 @@
            DISPLAY 'id classe :'
            ACCEPT WclasseE
            OPEN I-O feleves
+               MOVE Wine TO fe_ine
                MOVE Wnom TO fe_nom
                MOVE Wprenom TO fe_prenom
                STRING WanneNE "/" WmoisNE "/" WjourNE INTO fe_dateNaiss
@@ -341,12 +356,10 @@
                     AT END
                         MOVE 1 TO Wfin
                     NOT AT END
-                        DISPLAY 'Nom : '
-                        DISPLAY fe_nom
-                        DISPLAY 'Prenom'
-                        DISPLAY fe_prenom
-                        DISPLAY 'INE '
-                        DISPLAY fe_ine
+                        DISPLAY '---------------------'
+                        DISPLAY 'Nom : 'fe_nom
+                        DISPLAY 'Prenom : 'fe_prenom
+                        DISPLAY 'INE : 'fe_ine
                     END-READ
                 END-PERFORM
                 CLOSE feleves.
@@ -363,9 +376,14 @@
            DISPLAY ' superieur a 9'
            ACCEPT Wcoef
          END-PERFORM
+         PERFORM WITH TEST AFTER UNTIL Wniveau > 2 AND Wniveau < 7
+           DISPLAY "Quelle est son niveau ?"
+           ACCEPT Wniveau
+         END-PERFORM
          OPEN EXTEND fmatiere
            MOVE WNomMatiere TO fm_nom
            MOVE Wcoef TO fm_coef
+           MOVE Wniveau TO fm_niveau
            WRITE matiereTamp
          END-WRITE
          CLOSE fmatiere
@@ -384,8 +402,10 @@
                AT END
                    MOVE 1 TO Wfin
                NOT AT END
-                   DISPLAY 'Nom : '
-                   DISPLAY fm_nom
+                   DISPLAY '---------------------'
+                   DISPLAY 'Nom : 'fm_nom
+                   DISPLAY 'Coefficient : 'fm_coef
+                   DISPLAY 'Niveau : 'fm_niveau
                END-READ
            END-PERFORM
           CLOSE fmatiere.
@@ -394,21 +414,29 @@
        MOVE 0 TO Wtrouve
        MOVE 0 TO Wfin
        MOVE 0 TO Wrep
+       MOVE 0 TO WclasseId
        PERFORM WITH TEST AFTER UNTIL Wrep = 0
-        OPEN INPUT feleves
         DISPLAY 'Veuillez rentrer le numero ine de l etudiant : '
         ACCEPT Wine
-        PERFORM WITH TEST AFTER UNTIL Wfin = 1
-           READ feleves NEXT
-           AT END
-            MOVE 1 TO Wfin
-           NOT AT END
-            IF Wine = fe_ine
-                MOVE 1 TO Wtrouve
-            END-IF
+        OPEN INPUT feleves
+         MOVE Wine TO fe_ine
+          READ feleves
+          INVALID KEY
+           MOVE 0 TO Wtrouve
+          NOT INVALID KEY
+           MOVE 1 TO Wtrouve
+           MOVE fe_classe TO WclasseId
+           OPEN INPUT fclasse
+            MOVE WclasseId TO fc_id
+             READ fclasse
+             INVALID KEY
+              DISPLAY 'erreur inconnu'
+             NOT INVALID KEY
+              MOVE fc_niveau TO Wniveau
+             END-READ
+            CLOSE fclasse
           END-READ
-          END-PERFORM
-         CLOSE feleves
+        CLOSE feleves
 
          IF Wtrouve = 1
            MOVE 0 TO Wfin
@@ -446,7 +474,7 @@
              IF Wtrouve = 1
               MOVE 50 TO Wnote
                PERFORM WITH TEST AFTER UNTIL Wnote > 0 AND Wnote < 21
-                 DISPLAY 'Quelle note a eu l etudiant ? (< 0 et > 21)'
+                 DISPLAY 'Quelle note a eu l etudiant ? (< 0 et > 20)'
                  ACCEPT Wnote
                END-PERFORM
                OPEN I-O fnote
@@ -454,6 +482,7 @@
                  MOVE WNomMatiere TO fn_matiere
                  MOVE WidNote TO fn_idNote
                  MOVE Wnote TO fn_note
+                 MOVE Wniveau TO fn_niveau
                  WRITE noteTamp
                  END-WRITE
                CLOSE fnote
@@ -472,6 +501,24 @@
           ACCEPT Wrep
          END-PERFORM
        END-PERFORM.
+
+       AFFICHER_NOTE.
+        MOVE 0 TO Wfin
+        OPEN INPUT fnote
+           PERFORM WITH TEST AFTER UNTIL Wfin = 1
+               READ fnote NEXT
+               AT END
+                   MOVE 1 TO Wfin
+               NOT AT END
+                   DISPLAY '-----------------------'
+                   DISPLAY 'INE etudiant : 'fn_ine
+                   DISPLAY 'Matiere : 'fn_matiere
+                   DISPLAY 'Niveau : 'fn_niveau
+                   DISPLAY 'Note numero : 'fn_idNote
+                   DISPLAY 'Resulat : 'fn_note'/20'
+               END-READ
+           END-PERFORM
+          CLOSE fnote.
 
        AJOUT_CLASSE.
         MOVE 1 TO Wtrouve
@@ -539,10 +586,9 @@
                AT END
                    MOVE 1 TO Wfin
                NOT AT END
-                   DISPLAY 'id : '
-                   DISPLAY fc_id
-                   DISPLAY 'Prof tuteur id :'
-                   DISPLAY fc_idProf
+                   DISPLAY 'id : 'fc_id
+                   DISPLAY 'Prof tuteur id : 'fc_idProf
+                   DISPLAY 'Niveau : ' fc_niveau
                END-READ
            END-PERFORM
           CLOSE fclasse.
@@ -685,3 +731,69 @@
                  END-READ
              END-PERFORM
             CLOSE fcours.
+
+            Moyenne_Matiere_Classe.
+              MOVE 0 TO Wtrouve
+              MOVE 0 TO Wfin
+              MOVE 0 TO Wrep
+              PERFORM WITH TEST AFTER UNTIL Wrep = 0
+              DISPLAY 'Pour quelle classe voulez vous effectuer'
+              DISPLAY 'la moyenne ?'
+              ACCEPT WclasseId
+              OPEN INPUT fclasse
+               MOVE WclasseId TO fc_id
+                READ fclasse
+                INVALID KEY
+                 DISPLAY 'Classe inconnu'
+                NOT INVALID KEY
+                 MOVE 1 TO Wtrouve
+                 MOVE fc_niveau TO Wniveau
+                END-READ
+              CLOSE fclasse
+              IF Wtrouve = 1
+                MOVE 0 TO Wtrouve
+                DISPLAY 'Dans quelle matiere ?'
+                ACCEPT WNomMatiere
+                OPEN INPUT fmatiere
+                PERFORM WITH TEST AFTER UNTIL Wtrouve = 1 OR Wfin = 1
+                   READ fmatiere
+                   AT END
+                       DISPLAY 'Matiere non reconnu '
+                       MOVE 1 TO Wfin
+                   NOT AT END
+                        IF fm_nom = WNomMatiere THEN
+                         MOVE 1 TO Wtrouve
+                        END-IF
+                    END-READ
+                END-PERFORM
+                CLOSE fmatiere
+                IF Wtrouve = 1
+                  OPEN INPUT fnote
+                  MOVE WNomMatiere TO fn_matiere
+                  START fnote KEY IS = fn_matiere
+                  INVALID KEY
+                    DISPLAY "Aucune note pour cette matiere"
+                  NOT INVALID KEY
+                    PERFORM WITH TEST AFTER UNTIL Wfin = 1
+                        READ fnote NEXT
+                        AT END
+                          MOVE 1 TO Wfin
+                        NOT AT END
+                          IF fn_niveau = Wniveau
+                           COMPUTE WnoteMatiMoy = WnoteMatiMoy + fn_note
+                           COMPUTE WnbEleves = WnbEleves + 1
+                          END-IF
+                        END-READ
+                    END-PERFORM
+                  END-START
+                  COMPUTE Wresultat = WnoteMatiMoy / WnbEleves
+                  DISPLAY Wresultat"/20"
+                  CLOSE fnote
+                END-IF
+              END-IF
+
+             PERFORM WITH TEST AFTER UNTIL Wrep = 0 OR Wrep = 1
+              DISPLAY 'Souhaitez vous continuer ? 1 ou 0'
+              ACCEPT Wrep
+             END-PERFORM
+            END-PERFORM.
