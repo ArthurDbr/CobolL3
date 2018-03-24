@@ -197,6 +197,7 @@
            DISPLAY ' 09 : AJOUT_PROFESSEUR    | 10 : AFFICHER_PROF'
            DISPLAY ' 11 : AJOUT_COURS         | 12 : AFFICHER_COURS'
            DISPLAY ' 13 : Moyenne_Matiere_Classe'
+           DISPLAY ' 14 : SUPPRIMER_ELEVES'
            DISPLAY ' 0 : Sortir'
            ACCEPT Wchoix
            EVALUATE Wchoix
@@ -226,6 +227,8 @@
                    PERFORM AFFICHER_COURS
                WHEN 13
                    PERFORM Moyenne_Matiere_Classe
+               WHEN 14
+                   PERFORM SUPPRIMER_ELEVES
                WHEN OTHER
                    MOVE 0 TO Wchoix
        END-PERFORM
@@ -390,7 +393,7 @@
           END-READ
          CLOSE feleves
          IF Wtrouve = 1
-          OPEN INPUT fnote
+          OPEN I-O fnote
            MOVE Wine TO fn_ine
            START fnote KEY IS = fn_ine
            INVALID KEY
@@ -401,13 +404,20 @@
                  AT END
                    MOVE 1 TO Wfin
                  NOT AT END
-                   IF fn_ine = Wine
-                     DISPLAY 'E'
-                   END-IF
+                   DELETE fnote RECORD
                  END-READ
               END-PERFORM
             END-START
             CLOSE fnote
+           OPEN I-O feleves
+           MOVE Wine TO fe_ine
+           READ feleves
+            INVALID KEY
+             DISPLAY 'Eleves inexistante'
+            NOT INVALID KEY
+             DELETE feleves RECORD
+            END-READ
+           CLOSE feleves
          END-IF
 
 
