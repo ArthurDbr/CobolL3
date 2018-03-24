@@ -149,6 +149,12 @@
        77 Wtelephone PIC 9(10).
        77 WmatiereProf PIC A(15).
 
+       77 Wine2 PIC X(10).
+       77 Wclasse PIC 9(2).
+       77 Wniv PIC 9(1).
+       77 Wmoy PIC 9(2).
+       77 Wcpt PIC 9(2).
+
        PROCEDURE DIVISION.
        OPEN EXTEND feleves
        IF feleves_stat =35 THEN
@@ -185,12 +191,13 @@
        PERFORM WITH TEST AFTER UNTIL Wchoix = 0
            DISPLAY '----------------------------------'
            DISPLAY 'Quelle choix voulez vous faire :'
-           DISPLAY ' 01 : AJOUT_ELEVES        | 02 : AFFICHER_ELEVES'
-           DISPLAY ' 03 : AJOUT_MATIERE       | 04 : AFFICHER_MATIERE'
-           DISPLAY ' 05 : AJOUT_NOTE          | 06 : '
-           DISPLAY ' 07 : AJOUT_CLASSE        | 08 : AFFICHER_CLASSE'
-           DISPLAY ' 09 : AJOUT_PROFESSEUR    | 10 : AFFICHER_PROFESSEUR'
-           DISPLAY ' 11 : AJOUT_COURS         | 12 : AFFICHER_COURS'
+           DISPLAY ' 01 : AJOUT_ELEVES       | 02 : AFFICHER_ELEVES'
+           DISPLAY ' 03 : AJOUT_MATIERE      | 04 : AFFICHER_MATIERE'
+           DISPLAY ' 05 : AJOUT_NOTE         | 06 : '
+           DISPLAY ' 07 : AJOUT_CLASSE       | 08 : AFFICHER_CLASSE'
+           DISPLAY ' 09 : AJOUT_PROFESSEUR   | 10 : AFFICHER_PROFESSEUR'
+           DISPLAY ' 11 : AJOUT_COURS        | 12 : AFFICHER_COURS'
+           DISPLAY ' 13 : MOYENNE_ELEVE'
            DISPLAY ' 0 : Sortir'
            ACCEPT Wchoix
            EVALUATE Wchoix
@@ -216,6 +223,10 @@
                    PERFORM AJOUT_COURS
                WHEN 12
                    PERFORM AFFICHER_COURS
+               WHEN 13
+                   DISPLAY 'Numéro INE de l eleve'
+                   ACCEPT Wine
+                   PERFORM MOYENNE_ELEVE
                WHEN OTHER
                    MOVE 0 TO Wchoix
        END-PERFORM
@@ -619,7 +630,7 @@
 
            IF Wtrouve = 1
             MOVE 0 TO Wtrouve
-            DISPLAY 'Quelle classe va assister Ã  ce cours ?'
+            DISPLAY 'Quelle classe va assister Ã  ce cours ?'
             ACCEPT WclasseId
             OPEN INPUT fclasse
              MOVE WclasseId TO fc_id
@@ -685,3 +696,56 @@
                  END-READ
              END-PERFORM
             CLOSE fcours.
+
+         MOYENNE_ELEVE.
+          MOVE 0 TO Wfin
+          OPEN INPUT fmatiere
+            PERFORM WITH TEST AFTER UNTIL Wfin = 1
+              READ fmatiere
+              AT END
+                DISPLAY '1'
+                MOVE 1 TO Wfin
+              NOT AT END
+                DISPLAY '2'
+                MOVE Wine2 TO fe_ine
+                READ feleves
+                  INVALID KEY
+                    DISPLAY 'Eleve inexistant'
+                  NOT INVALID KEY
+                    MOVE fe_classe TO Wclasse
+                  END-READ
+                CLOSE feleves
+
+                MOVE Wclasse TO fc_id
+                READ fclasse
+                  INVALID KEY
+                    DISPLAY 'Classe inexistante'
+                  NOT INVALID KEY
+                    MOVE fc_niveau TO Wniv
+                  END-READ
+                CLOSE feleves
+
+                IF fm_niveau = Wniv
+                    MOVE Wine TO fn_ine
+                    START fnote KEY IS = fn_ine
+                    INVALID KEY
+                      DISPLAY "Aucune note"
+                    NOT INVALID KEY
+                      PERFORM WITH TEST AFTER UNTIL Wfin = 1
+                          READ fnote NEXT
+                          AT END
+                            MOVE 1 TO Wfin
+                          NOT AT END
+                            IF fn_matiere = fm_nom
+                                COMPUTE Wmoy = Wmoy + fn_note
+                                COMPUTE Wcpt = Wcpt + 1
+                            END-IF
+                          END-READ
+                      END-PERFORM
+                    END-START
+                    COMPUTE Wmoy = Wmoy / Wcpt
+                    DISPLAY Wmoy
+                END-IF
+              END-READ
+            END-PERFORM
+          CLOSE fmatiere.
