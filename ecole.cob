@@ -801,68 +801,81 @@
              END-PERFORM
             CLOSE fcours.
 
-            Moyenne_Matiere_Classe.
-              MOVE 0 TO Wtrouve
-              MOVE 0 TO Wfin
-              MOVE 0 TO Wrep
-              PERFORM WITH TEST AFTER UNTIL Wrep = 0
-              DISPLAY 'Pour quelle classe voulez vous effectuer'
-              DISPLAY 'la moyenne ?'
-              ACCEPT WclasseId
-              OPEN INPUT fclasse
-               MOVE WclasseId TO fc_id
-                READ fclasse
-                INVALID KEY
-                 DISPLAY 'Classe inconnu'
-                NOT INVALID KEY
-                 MOVE 1 TO Wtrouve
-                 MOVE fc_niveau TO Wniveau
-                END-READ
-              CLOSE fclasse
-              IF Wtrouve = 1
-                MOVE 0 TO Wtrouve
-                DISPLAY 'Dans quelle matiere ?'
-                ACCEPT WNomMatiere
-                OPEN INPUT fmatiere
-                PERFORM WITH TEST AFTER UNTIL Wtrouve = 1 OR Wfin = 1
-                   READ fmatiere
-                   AT END
-                       DISPLAY 'Matiere non reconnu '
-                       MOVE 1 TO Wfin
-                   NOT AT END
-                        IF fm_nom = WNomMatiere THEN
-                         MOVE 1 TO Wtrouve
-                        END-IF
-                    END-READ
-                END-PERFORM
-                CLOSE fmatiere
-                IF Wtrouve = 1
-                  OPEN INPUT fnote
-                  MOVE WNomMatiere TO fn_matiere
-                  START fnote KEY IS = fn_matiere
-                  INVALID KEY
-                    DISPLAY "Aucune note pour cette matiere"
-                  NOT INVALID KEY
-                    PERFORM WITH TEST AFTER UNTIL Wfin = 1
-                        READ fnote NEXT
-                        AT END
-                          MOVE 1 TO Wfin
-                        NOT AT END
-                          IF fn_niveau = Wniveau
-                           COMPUTE WnoteMatiMoy = WnoteMatiMoy + fn_note
-                           COMPUTE WnbEleves = WnbEleves + 1
-                          END-IF
-                        END-READ
-                    END-PERFORM
-                  END-START
-                  COMPUTE Wresultat = WnoteMatiMoy / WnbEleves
-                  DISPLAY Wresultat"/20"
-                  CLOSE fnote
-                END-IF
-              END-IF
+       Seuil_Moyenne.
+           MOVE 0 TO Wtrouve
+           MOVE 0 TO Wfin
+           MOVE 0 TO Wrep
+           PERFORM WITH TEST AFTER UNTIL Wrep = 0
 
-             PERFORM WITH TEST AFTER UNTIL Wrep = 0 OR Wrep = 1
-              DISPLAY 'Souhaitez vous continuer ? 1 ou 0'
-              ACCEPT Wrep
-             END-PERFORM
-            END-PERFORM.
+
+            PERFORM WITH TEST AFTER UNTIL Wrep = 0 OR Wrep = 1
+                DISPLAY 'Souhaitez vous continuer ? 1 ou 0'
+                ACCEPT Wrep
+            END-PERFORM
+           END-PERFORM.
+
+       Moyenne_Matiere_Classe.
+           MOVE 0 TO Wtrouve
+           MOVE 0 TO Wfin
+           MOVE 0 TO Wrep
+           PERFORM WITH TEST AFTER UNTIL Wrep = 0
+           DISPLAY 'Pour quelle classe voulez vous effectuer'
+           DISPLAY 'la moyenne ?'
+           ACCEPT WclasseId
+           OPEN INPUT fclasse
+           MOVE WclasseId TO fc_id
+              READ fclasse
+              INVALID KEY
+               DISPLAY 'Classe inconnu'
+              NOT INVALID KEY
+               MOVE 1 TO Wtrouve
+               MOVE fc_niveau TO Wniveau
+              END-READ
+           CLOSE fclasse
+           IF Wtrouve = 1
+               MOVE 0 TO Wtrouve
+               DISPLAY 'Dans quelle matiere ?'
+               ACCEPT WNomMatiere
+               OPEN INPUT fmatiere
+               PERFORM WITH TEST AFTER UNTIL Wtrouve = 1 OR Wfin = 1
+               READ fmatiere
+               AT END
+                   DISPLAY 'Matiere non reconnu '
+                   MOVE 1 TO Wfin
+               NOT AT END
+                       IF fm_nom = WNomMatiere THEN
+                       MOVE 1 TO Wtrouve
+                       END-IF
+                   END-READ
+               END-PERFORM
+               CLOSE fmatiere
+               IF Wtrouve = 1
+               OPEN INPUT fnote
+               MOVE WNomMatiere TO fn_matiere
+               START fnote KEY IS = fn_matiere
+               INVALID KEY
+                   DISPLAY "Aucune note pour cette matiere"
+               NOT INVALID KEY
+                   PERFORM WITH TEST AFTER UNTIL Wfin = 1
+                       READ fnote NEXT
+                       AT END
+                       MOVE 1 TO Wfin
+                       NOT AT END
+                       IF fn_niveau = Wniveau
+                       COMPUTE WnoteMatiMoy = WnoteMatiMoy + fn_note
+                       COMPUTE WnbEleves = WnbEleves + 1
+                       END-IF
+                       END-READ
+                   END-PERFORM
+               END-START
+               COMPUTE Wresultat = WnoteMatiMoy / WnbEleves
+               DISPLAY Wresultat"/20"
+               CLOSE fnote
+               END-IF
+           END-IF
+
+           PERFORM WITH TEST AFTER UNTIL Wrep = 0 OR Wrep = 1
+           DISPLAY 'Souhaitez vous continuer ? 1 ou 0'
+           ACCEPT Wrep
+           END-PERFORM
+           END-PERFORM.
