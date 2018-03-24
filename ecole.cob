@@ -188,13 +188,13 @@
 
 
        PERFORM WITH TEST AFTER UNTIL Wchoix = 0
-           DISPLAY '----------------------------------'
+           DISPLAY '-------------------------------------------------'
            DISPLAY 'Quelle choix voulez vous faire :'
            DISPLAY ' 01 : AJOUT_ELEVES        | 02 : AFFICHER_ELEVES'
            DISPLAY ' 03 : AJOUT_MATIERE       | 04 : AFFICHER_MATIERE'
            DISPLAY ' 05 : AJOUT_NOTE          | 06 : AFFICHER_NOTE'
            DISPLAY ' 07 : AJOUT_CLASSE        | 08 : AFFICHER_CLASSE'
-           DISPLAY ' 09 : AJOUT_PROFESSEUR    | 10 : AFFICHER_PROFESSEUR'
+           DISPLAY ' 09 : AJOUT_PROFESSEUR    | 10 : AFFICHER_PROF'
            DISPLAY ' 11 : AJOUT_COURS         | 12 : AFFICHER_COURS'
            DISPLAY ' 13 : Moyenne_Matiere_Classe'
            DISPLAY ' 0 : Sortir'
@@ -246,7 +246,7 @@
           NOT INVALID KEY
            DISPLAY 'Professeur deja present'
           END-READ
-         CLOSE fprof
+        CLOSE fprof
          IF Wtrouve = 1
            PERFORM WITH TEST AFTER UNTIL Wnom ALPHABETIC
             DISPLAY 'Nom : '
@@ -332,15 +332,26 @@
            ACCEPT WjourNE
            DISPLAY 'id classe :'
            ACCEPT WclasseE
-           OPEN I-O feleves
-               MOVE Wine TO fe_ine
-               MOVE Wnom TO fe_nom
-               MOVE Wprenom TO fe_prenom
-               STRING WanneNE "/" WmoisNE "/" WjourNE INTO fe_dateNaiss
-               MOVE WclasseE TO fe_classe
-               WRITE eleveTamp
-               END-WRITE
-           CLOSE feleves
+           OPEN INPUT fclasse
+            MOVE WclasseE TO fc_id
+             READ fclasse
+             INVALID KEY
+              DISPLAY 'classe inexistante'
+             NOT INVALID KEY
+              MOVE 1 TO Wtrouve
+             END-READ
+           CLOSE fclasse
+           IF Wtrouve = 1
+            OPEN I-O feleves
+                MOVE Wine TO fe_ine
+                MOVE Wnom TO fe_nom
+                MOVE Wprenom TO fe_prenom
+                STRING WanneNE "/" WmoisNE "/" WjourNE INTO fe_dateNaiss
+                MOVE WclasseE TO fe_classe
+                WRITE eleveTamp
+                END-WRITE
+            CLOSE feleves
+           END-IF
         END-IF
          PERFORM WITH TEST AFTER UNTIL Wrep = 0 OR Wrep = 1
           DISPLAY 'Souhaitez vous continuer ? 1 ou 0'
@@ -363,6 +374,50 @@
                     END-READ
                 END-PERFORM
                 CLOSE feleves.
+
+       SUPPRIMER_ELEVES.
+        MOVE 0 TO Wtrouve
+        PERFORM WITH TEST AFTER UNTIL Wrep = 0
+          DISPLAY 'Quelle est le numero de l etudiant'
+          ACCEPT Wine
+          OPEN INPUT feleves
+           MOVE Wine TO fe_ine
+          READ feleves
+          INVALID KEY
+           DISPLAY 'Eleves inexistante'
+          NOT INVALID KEY
+           MOVE 1 TO Wtrouve
+          END-READ
+         CLOSE feleves
+         IF Wtrouve = 1
+          OPEN INPUT fnote
+           MOVE Wine TO fn_ine
+           START fnote KEY IS = fn_ine
+           INVALID KEY
+             MOVE 1 TO Wtrouve
+           NOT INVALID KEY
+             PERFORM WITH TEST AFTER UNTIL Wfin = 1
+                 READ fnote NEXT
+                 AT END
+                   MOVE 1 TO Wfin
+                 NOT AT END
+                   IF fn_ine = Wine
+                     DISPLAY 'E'
+                   END-IF
+                 END-READ
+              END-PERFORM
+            END-START
+            CLOSE fnote
+         END-IF
+
+
+        PERFORM WITH TEST AFTER UNTIL Wrep = 0 OR Wrep = 1
+          DISPLAY 'Souhaitez vous continuer ? 1 ou 0'
+          ACCEPT Wrep
+         END-PERFORM
+        END-PERFORM.
+
+
 
        AJOUT_MATIERE.
        MOVE 0 TO Wfin
@@ -536,7 +591,6 @@
            DISPLAY 'classe deja cree'
           END-READ
         CLOSE fclasse
-        DISPLAY Wtrouve
          IF Wtrouve = 0
            DISPLAY 'Quelle est l identifiant du professeur tuteur ?'
            ACCEPT WclasseIdProf
@@ -550,16 +604,17 @@
             END-READ
            CLOSE fprof
            IF Wtrouve = 1
-             PERFORM WITH TEST AFTER UNTIL WclasseNiv < 7 AND WclasseNiv > 2
+            PERFORM WITH TEST AFTER UNTIL WclasseNiv < 7
+                                           AND WclasseNiv > 2
               DISPLAY 'Quelle est le niveau de la classe ?(6em, 5em...)'
               ACCEPT WclasseNiv
-             END-PERFORM
-             PERFORM WITH TEST AFTER UNTIL WclasseNnbElevesMax < 41
+            END-PERFORM
+            PERFORM WITH TEST AFTER UNTIL WclasseNnbElevesMax < 41
              AND WclasseNnbElevesMax > 19
-              DISPLAY 'Quelle est le nombre max d eleves de cette classe ?'
-              DISPLAY 'min : 20, max 40'
+              DISPLAY 'Quelle est le nombre max d eleves de cette '
+              DISPLAY 'classe ? min : 20, max 40'
               ACCEPT WclasseNnbElevesMax
-             END-PERFORM
+            END-PERFORM
             OPEN I-O fclasse
               MOVE WclasseId TO fc_id
               MOVE WclasseIdProf TO fc_idProf
@@ -612,17 +667,19 @@
           END-PERFORM
 
            PERFORM WITH TEST AFTER UNTIL WhoraireF - WhoraireD > 0
-            PERFORM WITH TEST AFTER UNTIL WhoraireD > 7 AND WhoraireD < 18
+            PERFORM WITH TEST AFTER UNTIL WhoraireD > 7
+                                           AND WhoraireD < 18
               DISPLAY 'Entrer l horaire de debut du cours'
               ACCEPT WhoraireD
             END-PERFORM
-            PERFORM WITH TEST AFTER UNTIL WhoraireF > 8 AND WhoraireF < 19
+            PERFORM WITH TEST AFTER UNTIL WhoraireF > 8
+                                           AND WhoraireF < 19
               DISPLAY 'Entrer l horaire de fin du cours'
               ACCEPT WhoraireF
             END-PERFORM
             IF WhoraireF - WhoraireD < 0
-              DISPLAY 'L horaire de debut doit etre inferieur a l horaire'
-              DISPLAY 'de fin'
+              DISPLAY 'L horaire de debut doit etre inferieur a'
+              DISPLAY 'l horaire de fin'
             END-IF
            END-PERFORM
 
@@ -647,10 +704,12 @@
                      IF fco_horaireF = WhoraireF
                       MOVE 0 TO Wtrouve
                      END-IF
-                     IF WhoraireD < fco_horaireF AND WhoraireD >= fco_horaireD
+                     IF WhoraireD < fco_horaireF
+                         AND WhoraireD >= fco_horaireD
                       MOVE 0 TO Wtrouve
                      END-IF
-                     IF WhoraireF < fco_horaireF AND WhoraireF >= fco_horaireD
+                     IF WhoraireF < fco_horaireF
+                         AND WhoraireF >= fco_horaireD
                       MOVE 0 TO Wtrouve
                      END-IF
                    ELSE
@@ -665,7 +724,7 @@
 
            IF Wtrouve = 1
             MOVE 0 TO Wtrouve
-            DISPLAY 'Quelle classe va assister Ã  ce cours ?'
+            DISPLAY 'Quelle classe va assister Ã  ce cours ?'
             ACCEPT WclasseId
             OPEN INPUT fclasse
              MOVE WclasseId TO fc_id
