@@ -154,6 +154,8 @@
        77 WnbEleves PIC 9(3).
        77 Wresultat PIC 9(2).99.
 
+       77 Wine2 PIC X(10).
+
        PROCEDURE DIVISION.
        OPEN EXTEND feleves
        IF feleves_stat =35 THEN
@@ -813,6 +815,59 @@
                 ACCEPT Wrep
             END-PERFORM
            END-PERFORM.
+
+         MOYENNE_ELEVE.
+          MOVE 0 TO Wfin
+          OPEN INPUT fmatiere
+            PERFORM WITH TEST AFTER UNTIL Wfin = 1
+              READ fmatiere
+              AT END
+                DISPLAY '1'
+                MOVE 1 TO Wfin
+              NOT AT END
+                DISPLAY '2'
+                MOVE Wine2 TO fe_ine
+                READ feleves
+                  INVALID KEY
+                    DISPLAY 'Eleve inexistant'
+                  NOT INVALID KEY
+                    MOVE fe_classe TO WclasseId
+                  END-READ
+                CLOSE feleves
+
+                MOVE WclasseId TO fc_id
+                READ fclasse
+                  INVALID KEY
+                    DISPLAY 'Classe inexistante'
+                  NOT INVALID KEY
+                    MOVE fc_niveau TO Wniveau
+                  END-READ
+                CLOSE feleves
+
+                IF fm_niveau = Wniveau
+                    MOVE Wine TO fn_ine
+                    START fnote KEY IS = fn_ine
+                    INVALID KEY
+                      DISPLAY "Aucune note"
+                    NOT INVALID KEY
+                      PERFORM WITH TEST AFTER UNTIL Wfin = 1
+                          READ fnote NEXT
+                          AT END
+                            MOVE 1 TO Wfin
+                          NOT AT END
+                            IF fn_matiere = fm_nom
+                                COMPUTE Wmoy = Wmoy + fn_note
+                                COMPUTE Wcpt = Wcpt + 1
+                            END-IF
+                          END-READ
+                      END-PERFORM
+                    END-START
+                    COMPUTE Wmoy = Wmoy / Wcpt
+                    DISPLAY Wmoy
+                END-IF
+              END-READ
+            END-PERFORM
+          CLOSE fmatiere.
 
        Moyenne_Matiere_Classe.
            MOVE 0 TO Wtrouve
