@@ -155,6 +155,8 @@
        77 Wresultat PIC 9(2).99.
 
        77 Wine2 PIC X(10).
+       77 Wmoy PIC 9(2).
+       77 Wcpt PIC 9(2).
 
        PROCEDURE DIVISION.
        OPEN EXTEND feleves
