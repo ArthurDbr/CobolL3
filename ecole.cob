@@ -158,6 +158,13 @@
        77 Wmoy PIC 9(2).
        77 Wcpt PIC 9(2).
 
+       77 WclasseMoy PIC 9(1).
+       77 Wfin2 PIC 9(1).
+       77 Wnotes PIC 9(4).
+       77 Wcpt2 PIC 9(3).
+       77 Wtmp PIC 9(2).
+       77 WresultatMoy PIC 9(2).99.
+
        PROCEDURE DIVISION.
        OPEN EXTEND feleves
        IF feleves_stat =35 THEN
@@ -202,6 +209,7 @@
            DISPLAY ' 11 : AJOUT_COURS         | 12 : AFFICHER_COURS'
            DISPLAY ' 13 : Moyenne_Matiere_Classe'
            DISPLAY ' 14 : SUPPRIMER_ELEVES'
+           DISPLAY ' 15 : MOYENNE_CLASSE'
            DISPLAY ' 0 : Sortir'
            ACCEPT Wchoix
            EVALUATE Wchoix
@@ -233,6 +241,8 @@
                    PERFORM Moyenne_Matiere_Classe
                WHEN 14
                    PERFORM SUPPRIMER_ELEVES
+               WHEN 15
+                   PERFORM MOYENNE_CLASSE
                WHEN OTHER
                    MOVE 0 TO Wchoix
        END-PERFORM
@@ -936,3 +946,46 @@
            ACCEPT Wrep
            END-PERFORM
            END-PERFORM.
+
+           MOYENNE_CLASSE.
+           MOVE 0 TO Wfin
+           MOVE 0 TO Wcpt
+           MOVE 0 TO Wtmp
+           MOVE 0 TO Wnotes
+           DISPLAY 'Quel est la classe ?'
+           ACCEPT WclasseMoy
+           MOVE WclasseMoy TO fn_niveau
+           START fnote KEY IS = fn_niveau
+           INVALID KEY
+               DISPLAY "Classe inexistante"
+           NOT INVALID KEY
+               PERFORM WITH TEST AFTER UNTIL Wfin = 1
+                   READ fnote NEXT
+                   AT END
+                       MOVE 1 TO Wfin
+                   NOT AT END
+                       MOVE 0 TO Wfin2
+                       OPEN INPUT fmatiere
+                           PERFORM WITH TEST AFTER UNTIL Wfin2 = 1
+                               READ fmatiere
+                               AT END
+                                   MOVE 1 TO Wfin2
+                               NOT AT END
+                                   IF fm_nom = fn_matiere
+                                       MOVE fm_coef TO Wtmp
+                                       MOVE 1 TO Wfin2
+                                   END-IF
+                               END-READ
+                           END-PERFORM
+                       CLOSE fmatiere
+                       COMPUTE Wnotes = Wnotes + fn_note
+                       DISPLAY 'TMP'
+                       DISPLAY Wtmp
+                       COMPUTE Wcpt2 = Wcpt2 + Wtmp
+                   END-READ
+               END-PERFORM
+           END-START
+           COMPUTE WresultatMoy = Wnotes/Wcpt2
+           DISPLAY 'La moyenne de classe est de '
+           DISPLAY WresultatMoy"/20"
+           CLOSE fnote.
